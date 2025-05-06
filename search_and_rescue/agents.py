@@ -1,11 +1,13 @@
 """
 Agents module for Search and Rescue simulation.
 Contains different agent implementations with various coordination strategies.
+Enhanced with A* path planning for communicating agents.
 """
 
 import random
 import math
 import numpy as np
+import heapq
 
 class Agent:
     """Base search and rescue agent with configurable coordination strategies"""
@@ -504,32 +506,78 @@ class CommunicatingAgent(Agent):
     
     def plan_path_to_victim(self, victim_pos):
         """Plan a path to the assigned victim using A* search"""
-        # Simplified A* path planning
+        # A* search implementation
         start = (self.x, self.y)
         goal = victim_pos
         
-        # A* implementation would go here
-        # For simplicity, just return a direct path (not accounting for obstacles)
-        path = []
-        x, y = start
+        # Initialize open and closed sets
+        open_set = []
+        closed_set = set()
         
-        while (x, y) != goal:
-            if x < goal[0]:
-                x += 1
-            elif x > goal[0]:
-                x -= 1
-            elif y < goal[1]:
-                y += 1
-            elif y > goal[1]:
-                y -= 1
+        # Priority queue for open set with f(n) as priority
+        # Format: (f_score, (x, y))
+        heapq.heappush(open_set, (0, start))
+        
+        # Keep track of where each node came from
+        came_from = {}
+        
+        # g_score: cost from start to current node
+        g_score = {start: 0}
+        
+        # f_score: estimated cost from start to goal through current node
+        f_score = {start: self.heuristic(start, goal)}
+        
+        while open_set:
+            # Get node with lowest f_score
+            current_f, current = heapq.heappop(open_set)
             
-            if self.environment.is_valid_position(x, y):
-                path.append((x, y))
-            else:
-                # If path is blocked, stop planning
-                break
+            # Check if we've reached the goal
+            if current == goal:
+                # Reconstruct the path
+                path = []
+                while current in came_from:
+                    path.append(current)
+                    current = came_from[current]
+                
+                # Reverse to get path from start to goal
+                path.reverse()
+                return path
+            
+            # Add current to closed set
+            closed_set.add(current)
+            
+            # Check all neighboring cells
+            for dx, dy in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
+                neighbor = (current[0] + dx, current[1] + dy)
+                
+                # Skip if out of bounds or an obstacle
+                if not self.environment.is_valid_position(neighbor[0], neighbor[1]):
+                    continue
+                
+                # Skip if in closed set
+                if neighbor in closed_set:
+                    continue
+                
+                # Calculate tentative g_score
+                tentative_g = g_score.get(current, float('inf')) + 1
+                
+                # Check if this path is better
+                if tentative_g < g_score.get(neighbor, float('inf')):
+                    # Update path
+                    came_from[neighbor] = current
+                    g_score[neighbor] = tentative_g
+                    f_score[neighbor] = tentative_g + self.heuristic(neighbor, goal)
+                    
+                    # Add to open set if not already there
+                    if not any(neighbor == pos for _, pos in open_set):
+                        heapq.heappush(open_set, (f_score[neighbor], neighbor))
         
-        return path
+        # If no path is found, return empty path
+        return []
+    
+    def heuristic(self, a, b):
+        """Manhattan distance heuristic for A* search"""
+        return abs(a[0] - b[0]) + abs(a[1] - b[1])
     
     def update(self, agents=None):
         """Update agent state and position"""
