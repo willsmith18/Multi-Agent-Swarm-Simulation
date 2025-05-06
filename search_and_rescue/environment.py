@@ -32,11 +32,86 @@ class DisasterEnvironment:
             for j in range(self.grid_size):
                 if random.random() < obstacle_density:
                     self.grid[i][j] = 1  # 1 represents obstacle
-    
+
+    def verify_victims_accessibility(self):
+        """
+        Verify that all victims in the environment are accessible.
+        Returns:
+            tuple: (all_accessible, inaccessible_victims) where all_accessible is a boolean
+                and inaccessible_victims is a list of (x, y) coordinates of unreachable victims
+        """
+        inaccessible_victims = []
+        victim_positions = []
+        
+        # Find all victim positions
+        for i in range(self.grid_size):
+            for j in range(self.grid_size):
+                if self.grid[i][j] == 2:  # Victim
+                    victim_positions.append((i, j))
+        
+        # For each victim, check if it's accessible from any valid cell
+        for victim_pos in victim_positions:
+            if not self._is_accessible(victim_pos):
+                inaccessible_victims.append(victim_pos)
+        
+        return len(inaccessible_victims) == 0, inaccessible_victims
+
+    def _is_accessible(self, target_pos):
+        """
+        Check if the target position is accessible from any valid starting position.
+        Uses breadth-first search to find a path.
+        
+        Args:
+            target_pos: (x, y) coordinates of the target position
+            
+        Returns:
+            bool: True if target is accessible, False otherwise
+        """
+        # BFS to find a path to victim
+        queue = []
+        visited = set()
+        
+        # Add all empty cells as potential starting points
+        for i in range(self.grid_size):
+            for j in range(self.grid_size):
+                if self.grid[i][j] == 0:  # Empty cell
+                    queue.append((i, j))
+                    visited.add((i, j))
+        
+        # Cardinal directions: up, right, down, left
+        directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]
+        
+        while queue:
+            current = queue.pop(0)
+            
+            # Check if we're adjacent to the target
+            if (abs(current[0] - target_pos[0]) == 1 and current[1] == target_pos[1]) or \
+            (abs(current[1] - target_pos[1]) == 1 and current[0] == target_pos[0]):
+                return True
+            
+            # Try all four directions
+            for dx, dy in directions:
+                next_x, next_y = current[0] + dx, current[1] + dy
+                next_pos = (next_x, next_y)
+                
+                # Check if the next position is valid and not visited
+                if (0 <= next_x < self.grid_size and 0 <= next_y < self.grid_size and
+                    self.grid[next_x][next_y] != 1 and  # Not an obstacle
+                    next_pos not in visited):
+                    
+                    queue.append(next_pos)
+                    visited.add(next_pos)
+        
+        return False
+
     def create_disaster_zone(self, victim_count=10):
-        """Create a disaster zone with victims clustered in certain areas"""
+        """Create a disaster zone with victims clustered in certain areas, ensuring all victims are accessible"""
         # Create 1-3 disaster zones (clusters of victims)
         zone_count = random.randint(1, 3)
+        max_attempts = 100  # Limit attempts to prevent infinite loops
+        
+        # Reset victim count
+        self.victims_total = 0
         
         for _ in range(zone_count):
             # Choose a center for the disaster zone
@@ -49,8 +124,9 @@ class DisasterEnvironment:
             # Place victims in the zone
             victims_per_zone = victim_count // zone_count
             placed = 0
+            attempts = 0
             
-            while placed < victims_per_zone:
+            while placed < victims_per_zone and attempts < max_attempts:
                 # Get location near the center of the zone
                 offset_x = random.randint(-zone_radius, zone_radius)
                 offset_y = random.randint(-zone_radius, zone_radius)
@@ -61,9 +137,30 @@ class DisasterEnvironment:
                 # Ensure the location is within grid and not on an obstacle
                 if (0 <= x < self.grid_size and 0 <= y < self.grid_size and 
                     self.grid[x][y] == 0):
-                    self.grid[x][y] = 2  # 2 represents victim
-                    placed += 1
-                    self.victims_total += 1
+                    
+                    # Check if placing a victim here would have at least one adjacent empty cell
+                    has_adjacent_empty = False
+                    for dx, dy in [(-1, 0), (0, 1), (1, 0), (0, -1)]:
+                        nx, ny = x + dx, y + dy
+                        if (0 <= nx < self.grid_size and 0 <= ny < self.grid_size and 
+                            self.grid[nx][ny] == 0):
+                            has_adjacent_empty = True
+                            break
+                    
+                    if has_adjacent_empty:
+                        self.grid[x][y] = 2  # Place victim
+                        placed += 1
+                        self.victims_total += 1
+                
+                attempts += 1
+        
+        # Verify all victims are accessible
+        all_accessible, inaccessible = self.verify_victims_accessibility()
+        if not all_accessible:
+            print(f"Warning: {len(inaccessible)} victims are inaccessible! Removing them.")
+            for pos in inaccessible:
+                self.grid[pos[0]][pos[1]] = 0  # Remove inaccessible victim
+                self.victims_total -= 1
     
     def get_cell_type(self, x, y):
         """Return the type of cell at grid coordinates (x, y)"""

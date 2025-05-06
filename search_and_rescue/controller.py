@@ -11,6 +11,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import csv
 import os
 from datetime import datetime
+import random
 
 from environment import DisasterEnvironment
 from agents import Agent, StigmergyAgent, CommunicatingAgent
@@ -159,12 +160,64 @@ class ExperimentController:
         self.current_strategy = self.strategy_var.get()
     
     def setup_environment(self):
-        """Create environment with obstacles and victims"""
+        """Create environment with obstacles and victims, ensuring all victims are accessible"""
         obstacle_density = self.obstacle_density_var.get()
         victim_count = self.victim_count_var.get()
         
+        # Create obstacles
         self.environment.create_obstacles(obstacle_density=obstacle_density)
+        
+        # Create disaster zone with victims
         self.environment.create_disaster_zone(victim_count=victim_count)
+        
+        # Verify all victims are accessible
+        all_accessible, inaccessible = self.environment.verify_victims_accessibility()
+        
+        if not all_accessible:
+            print(f"Warning: Found {len(inaccessible)} inaccessible victims!")
+            
+            # Remove inaccessible victims
+            for pos in inaccessible:
+                self.environment.grid[pos[0]][pos[1]] = 0
+                self.environment.victims_total -= 1
+            
+            # Try to place additional victims to reach the target count
+            additional_needed = victim_count - self.environment.victims_total
+            if additional_needed > 0:
+                print(f"Attempting to place {additional_needed} additional victims...")
+                attempts = 0
+                max_attempts = 200
+                placed = 0
+                
+                while placed < additional_needed and attempts < max_attempts:
+                    x = random.randint(0, self.environment.grid_size - 1)
+                    y = random.randint(0, self.environment.grid_size - 1)
+                    
+                    # Check if position is empty
+                    if self.environment.grid[x][y] == 0:
+                        # Check for adjacent empty cells
+                        has_adjacent_empty = False
+                        for dx, dy in [(-1, 0), (0, 1), (1, 0), (0, -1)]:
+                            nx, ny = x + dx, y + dy
+                            if (0 <= nx < self.environment.grid_size and 
+                                0 <= ny < self.environment.grid_size and 
+                                self.environment.grid[nx][ny] == 0):
+                                has_adjacent_empty = True
+                                break
+                        
+                        if has_adjacent_empty:
+                            self.environment.grid[x][y] = 2  # Place victim
+                            if self.environment._is_accessible((x, y)):
+                                placed += 1
+                                self.environment.victims_total += 1
+                            else:
+                                self.environment.grid[x][y] = 0  # Remove if not accessible
+                    
+                    attempts += 1
+                
+                print(f"Successfully placed {placed} additional victims.")
+            
+            print(f"Final victim count: {self.environment.victims_total}")
     
     def create_agents(self, count=3, strategy="basic"):
         """Create and place agents in the environment based on strategy"""
@@ -183,12 +236,13 @@ class ExperimentController:
             self.agents.append(agent)
     
     def start_simulation(self):
-        """Start the simulation"""
+        """Start or resume the simulation"""
         if not self.running:
             self.running = True
-            self.step_count = 0
-            self.environment.start_mission()
-            self.metrics['rescue_rate'] = []
+            # Only reset step count if starting a new simulation, not when resuming
+            if self.step_count == 0:
+                self.environment.start_mission()
+                self.metrics['rescue_rate'] = []
             self.update_simulation()
             self.start_button.config(text="Pause", command=self.pause_simulation)
     
@@ -201,7 +255,7 @@ class ExperimentController:
     def reset_simulation(self):
         """Reset the entire simulation"""
         self.running = False
-        self.start_button.config(text="Start", command=self.start_simulation)
+        self.start_button.config(text="Start", command=self.start_simulation, state=tk.NORMAL)  # Make sure button is enabled
         self.step_count = 0
         
         # Reset metrics
