@@ -1,0 +1,10 @@
+Phase,Strategy,Agent_Count,Obstacle_Density,Victim_Count,Comm_Range,Trial,Completion_Time,Coverage,Avg_Path_Length,Avg_Idle_Time,Victims_Rescued,Victims_Total,Success_Rate
+3,communication,3,0.15,10,inf,1,355,0.6153846153846154,355.0,0.0,10,10,1.0
+3,communication,3,0.15,10,5,1,155,0.6020761245674741,155.0,0.0,10,10,1.0
+3,communication,3,0.15,10,2,1,198,0.5136054421768708,198.0,0.0,10,10,1.0
+3,communication,5,0.15,10,inf,1,8,0.1388888888888889,8.0,0.0,10,10,1.0
+3,communication,5,0.15,10,5,1,1000,0.9768211920529801,1000.8,0.0,19,10,1.9
+3,communication,5,0.15,10,2,1,1000,0.9932432432432432,1000.0,0.0,19,9,2.111111111111111
+3,communication,10,0.15,10,inf,1,6,0.1912751677852349,6.7,0.0,10,10,1.0
+3,communication,10,0.15,10,5,1,1000,0.8717948717948718,1000.1,0.0,18,9,2.0
+3,communication,10,0.15,10,2,1,7,0.22972972972972974,7.0,0.0,10,10,1.0

@@ -1,6 +1,7 @@
 """
 Controller module for Search and Rescue simulation.
 Manages experiment setup, execution, and metrics collection.
+Enhanced with automated batch experiment capabilities.
 """
 
 import tkinter as tk
@@ -10,8 +11,10 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import csv
 import os
-from datetime import datetime
 import random
+from datetime import datetime
+import argparse
+from tqdm import tqdm  # Add this import for progress bars
 
 from environment import DisasterEnvironment
 from agents import Agent, StigmergyAgent, CommunicatingAgent
@@ -22,18 +25,30 @@ class ExperimentController:
     Supports different coordination strategies and varying numbers of agents.
     """
     
-    def __init__(self, window, grid_size=20, cell_size=30):
+    def __init__(self, window=None, grid_size=20, cell_size=30):
         self.window = window
-        self.window.title("Search and Rescue Simulation")
         
         # Create environment
         self.environment = DisasterEnvironment(grid_size, cell_size)
         
-        # Canvas setup
-        canvas_width = self.environment.width
-        canvas_height = self.environment.height + 60  # Extra space for metrics
-        self.canvas = tk.Canvas(window, width=canvas_width, height=canvas_height)
-        self.canvas.pack()
+        # GUI components (only if window is provided)
+        if window:
+            self.window.title("Search and Rescue Simulation")
+            
+            # Canvas setup
+            canvas_width = self.environment.width
+            canvas_height = self.environment.height + 60  # Extra space for metrics
+            self.canvas = tk.Canvas(window, width=canvas_width, height=canvas_height)
+            self.canvas.pack()
+            
+            # Create UI controls
+            self.create_controls()
+            
+            # Results visualization
+            self.fig = None
+            self.create_results_window()
+        else:
+            self.canvas = None
         
         # Agents
         self.agents = []
@@ -58,13 +73,6 @@ class ExperimentController:
         # Results storage for batch experiments
         self.results_directory = "experiment_results"
         os.makedirs(self.results_directory, exist_ok=True)
-        
-        # UI controls
-        self.create_controls()
-        
-        # Results visualization
-        self.fig = None
-        self.create_results_window()
     
     def create_controls(self):
         """Create UI controls for the simulation"""
@@ -139,6 +147,23 @@ class ExperimentController:
         self.export_results_button = tk.Button(batch_frame, text="Export Results", 
                                              command=self.export_results)
         self.export_results_button.pack(pady=2)
+        
+        # New automated experiment buttons
+        auto_frame = tk.LabelFrame(control_frame, text="Automated Experiments")
+        auto_frame.pack(side=tk.LEFT, padx=5, pady=5)
+        
+        # Run automated phases
+        self.run_phase1_button = tk.Button(auto_frame, text="Run Phase 1", 
+                                          command=lambda: self.run_automated_phase(1))
+        self.run_phase1_button.pack(pady=2)
+        
+        self.run_phase2_button = tk.Button(auto_frame, text="Run Phase 2", 
+                                          command=lambda: self.run_automated_phase(2))
+        self.run_phase2_button.pack(pady=2)
+        
+        self.run_phase3_button = tk.Button(auto_frame, text="Run Phase 3", 
+                                          command=lambda: self.run_automated_phase(3))
+        self.run_phase3_button.pack(pady=2)
     
     def create_results_window(self):
         """Create a window for displaying experiment results"""
@@ -161,8 +186,8 @@ class ExperimentController:
     
     def setup_environment(self):
         """Create environment with obstacles and victims, ensuring all victims are accessible"""
-        obstacle_density = self.obstacle_density_var.get()
-        victim_count = self.victim_count_var.get()
+        obstacle_density = self.obstacle_density_var.get() if hasattr(self, 'obstacle_density_var') else 0.15
+        victim_count = self.victim_count_var.get() if hasattr(self, 'victim_count_var') else 10
         
         # Create obstacles
         self.environment.create_obstacles(obstacle_density=obstacle_density)
@@ -219,7 +244,7 @@ class ExperimentController:
             
             print(f"Final victim count: {self.environment.victims_total}")
     
-    def create_agents(self, count=3, strategy="basic"):
+    def create_agents(self, count=3, strategy="basic", comm_range=5):
         """Create and place agents in the environment based on strategy"""
         self.agents = []
         
@@ -230,6 +255,9 @@ class ExperimentController:
                 agent = StigmergyAgent(f"Agent{i}", self.environment)
             elif strategy == "communication":
                 agent = CommunicatingAgent(f"Agent{i}", self.environment)
+                # Set communication range if provided
+                if hasattr(agent, 'comm_range'):
+                    agent.comm_range = comm_range
             else:
                 agent = Agent(f"Agent{i}", self.environment)
                 
@@ -244,18 +272,21 @@ class ExperimentController:
                 self.environment.start_mission()
                 self.metrics['rescue_rate'] = []
             self.update_simulation()
-            self.start_button.config(text="Pause", command=self.pause_simulation)
+            if hasattr(self, 'start_button'):
+                self.start_button.config(text="Pause", command=self.pause_simulation)
     
     def pause_simulation(self):
         """Pause the simulation"""
         if self.running:
             self.running = False
-            self.start_button.config(text="Resume", command=self.start_simulation)
+            if hasattr(self, 'start_button'):
+                self.start_button.config(text="Resume", command=self.start_simulation)
     
     def reset_simulation(self):
         """Reset the entire simulation"""
         self.running = False
-        self.start_button.config(text="Start", command=self.start_simulation, state=tk.NORMAL)  # Make sure button is enabled
+        if hasattr(self, 'start_button'):
+            self.start_button.config(text="Start", command=self.start_simulation, state=tk.NORMAL)
         self.step_count = 0
         
         # Reset metrics
@@ -271,17 +302,23 @@ class ExperimentController:
         # Reset environment
         self.environment = DisasterEnvironment(
             self.environment.grid_size, 
-            self.environment.cell_size
+            self.environment.cell_size if hasattr(self.environment, 'cell_size') else 30
         )
         self.setup_environment()
         
         # Create new agents
-        strategy = self.strategy_var.get()
-        count = self.agent_count_var.get()
+        if hasattr(self, 'strategy_var') and hasattr(self, 'agent_count_var'):
+            strategy = self.strategy_var.get()
+            count = self.agent_count_var.get()
+        else:
+            strategy = self.current_strategy
+            count = len(self.agents) if self.agents else 3
+            
         self.create_agents(count, strategy)
         
-        # Redraw
-        self.draw()
+        # Redraw if in GUI mode
+        if self.canvas:
+            self.draw()
     
     def update_simulation(self):
         """Update the simulation state"""
@@ -305,24 +342,28 @@ class ExperimentController:
             # Increment step count
             self.step_count += 1
             
-            # Redraw everything
-            self.draw()
+            # Redraw everything if in GUI mode
+            if self.canvas:
+                self.draw()
             
             # Check if mission is complete or max steps reached
             if self.environment.is_mission_complete() or self.step_count >= self.max_steps:
                 self.running = False
-                self.start_button.config(text="Completed", state=tk.DISABLED)
+                if hasattr(self, 'start_button'):
+                    self.start_button.config(text="Completed", state=tk.DISABLED)
                 
                 # Record metrics
                 self.record_final_metrics()
                 
-                # Display results
-                self.display_results()
+                # Display results if in GUI mode
+                if self.canvas:
+                    self.display_results()
                 
                 return
             
-            # Schedule next update
-            self.window.after(self.update_interval, self.update_simulation)
+            # Schedule next update if in GUI mode
+            if self.canvas and self.window:
+                self.window.after(self.update_interval, self.update_simulation)
     
     def record_final_metrics(self):
         """Record the final metrics for the simulation"""
@@ -357,67 +398,69 @@ class ExperimentController:
     def display_results(self):
         """Display the results visually"""
         # Show results window
-        self.results_window.deiconify()
-        
-        # Clear previous plots
-        for ax_row in self.ax:
-            for ax in ax_row:
-                ax.clear()
-        
-        # Plot rescue rate over time
-        self.ax[0, 0].plot(self.metrics['rescue_rate'])
-        self.ax[0, 0].set_title('Victim Rescue Rate')
-        self.ax[0, 0].set_xlabel('Time Steps')
-        self.ax[0, 0].set_ylabel('Fraction Rescued')
-        self.ax[0, 0].grid(True)
-        
-        # Plot agent path lengths
-        agent_ids = [f"Agent {i}" for i in range(len(self.agents))]
-        
-        x = np.arange(len(agent_ids))
-        width = 0.35
-        
-        self.ax[0, 1].bar(x, self.metrics['path_lengths'])
-        self.ax[0, 1].set_title('Agent Path Lengths')
-        self.ax[0, 1].set_xticks(x)
-        self.ax[0, 1].set_xticklabels(agent_ids)
-        self.ax[0, 1].set_ylabel('Steps')
-        
-        # Plot agent idle times
-        self.ax[1, 0].bar(x, self.metrics['idle_times'])
-        self.ax[1, 0].set_title('Agent Idle Times')
-        self.ax[1, 0].set_xticks(x)
-        self.ax[1, 0].set_xticklabels(agent_ids)
-        self.ax[1, 0].set_ylabel('Steps')
-        
-        # Plot rescue timeline
-        if self.metrics['rescue_times']:
-            timeline = np.zeros(self.step_count + 1)
-            for rescue_time in self.metrics['rescue_times']:
-                if rescue_time <= self.step_count:
-                    timeline[rescue_time] += 1
+        if hasattr(self, 'results_window'):
+            self.results_window.deiconify()
             
-            cumulative = np.cumsum(timeline)
-            self.ax[1, 1].plot(cumulative)
-            self.ax[1, 1].set_title('Cumulative Rescues')
-            self.ax[1, 1].set_xlabel('Time Steps')
-            self.ax[1, 1].set_ylabel('Victims Rescued')
-            self.ax[1, 1].grid(True)
-        
-        self.fig.tight_layout()
-        self.canvas_fig.draw()
+            # Clear previous plots
+            for ax_row in self.ax:
+                for ax in ax_row:
+                    ax.clear()
+            
+            # Plot rescue rate over time
+            self.ax[0, 0].plot(self.metrics['rescue_rate'])
+            self.ax[0, 0].set_title('Victim Rescue Rate')
+            self.ax[0, 0].set_xlabel('Time Steps')
+            self.ax[0, 0].set_ylabel('Fraction Rescued')
+            self.ax[0, 0].grid(True)
+            
+            # Plot agent path lengths
+            agent_ids = [f"Agent {i}" for i in range(len(self.agents))]
+            
+            x = np.arange(len(agent_ids))
+            width = 0.35
+            
+            self.ax[0, 1].bar(x, self.metrics['path_lengths'])
+            self.ax[0, 1].set_title('Agent Path Lengths')
+            self.ax[0, 1].set_xticks(x)
+            self.ax[0, 1].set_xticklabels(agent_ids)
+            self.ax[0, 1].set_ylabel('Steps')
+            
+            # Plot agent idle times
+            self.ax[1, 0].bar(x, self.metrics['idle_times'])
+            self.ax[1, 0].set_title('Agent Idle Times')
+            self.ax[1, 0].set_xticks(x)
+            self.ax[1, 0].set_xticklabels(agent_ids)
+            self.ax[1, 0].set_ylabel('Steps')
+            
+            # Plot rescue timeline
+            if self.metrics['rescue_times']:
+                timeline = np.zeros(self.step_count + 1)
+                for rescue_time in self.metrics['rescue_times']:
+                    if rescue_time <= self.step_count:
+                        timeline[rescue_time] += 1
+                
+                cumulative = np.cumsum(timeline)
+                self.ax[1, 1].plot(cumulative)
+                self.ax[1, 1].set_title('Cumulative Rescues')
+                self.ax[1, 1].set_xlabel('Time Steps')
+                self.ax[1, 1].set_ylabel('Victims Rescued')
+                self.ax[1, 1].grid(True)
+            
+            self.fig.tight_layout()
+            self.canvas_fig.draw()
     
     def run_batch_trials(self):
         """Run multiple trials automatically and aggregate results"""
         # Disable UI during batch trials
-        self.start_button.config(state=tk.DISABLED)
-        self.reset_button.config(state=tk.DISABLED)
-        self.run_trials_button.config(state=tk.DISABLED)
+        if hasattr(self, 'start_button'):
+            self.start_button.config(state=tk.DISABLED)
+            self.reset_button.config(state=tk.DISABLED)
+            self.run_trials_button.config(state=tk.DISABLED)
         
         # Parameters to vary
         agent_counts = [3, 5, 10]
         num_trials = 5
-        strategy = self.strategy_var.get()
+        strategy = self.strategy_var.get() if hasattr(self, 'strategy_var') else self.current_strategy
         
         # Results storage
         batch_results = {}
@@ -435,7 +478,8 @@ class ExperimentController:
             for trial in range(num_trials):
                 # Setup trial
                 self.reset_simulation()
-                self.agent_count_var.set(agent_count)
+                if hasattr(self, 'agent_count_var'):
+                    self.agent_count_var.set(agent_count)
                 self.create_agents(agent_count, strategy)
                 
                 # Run simulation automatically until completion
@@ -485,9 +529,10 @@ class ExperimentController:
         self.display_batch_results(batch_results)
         
         # Re-enable UI
-        self.start_button.config(state=tk.NORMAL, text="Start", command=self.start_simulation)
-        self.reset_button.config(state=tk.NORMAL)
-        self.run_trials_button.config(state=tk.NORMAL)
+        if hasattr(self, 'start_button'):
+            self.start_button.config(state=tk.NORMAL, text="Start", command=self.start_simulation)
+            self.reset_button.config(state=tk.NORMAL)
+            self.run_trials_button.config(state=tk.NORMAL)
     
     def save_batch_results(self, results, strategy):
         """Save batch experiment results to file"""
@@ -512,88 +557,90 @@ class ExperimentController:
                     ])
         
         print(f"Results saved to {filename}")
+        return filename
     
     def display_batch_results(self, results):
         """Display aggregated results from batch trials"""
         # Show results window
-        self.results_window.deiconify()
-        
-        # Clear previous plots
-        for ax_row in self.ax:
-            for ax in ax_row:
-                ax.clear()
-        
-        # Plot average completion time for different agent counts
-        agent_counts = list(results.keys())
-        agent_counts.sort()  # Ensure counts are in ascending order
-        avg_completion_times = [np.mean(results[count]['completion_times']) for count in agent_counts]
-        std_completion_times = [np.std(results[count]['completion_times']) for count in agent_counts]
-        
-        self.ax[0, 0].bar(range(len(agent_counts)), avg_completion_times, yerr=std_completion_times)
-        self.ax[0, 0].set_title('Average Completion Time by Agent Count')
-        self.ax[0, 0].set_xticks(range(len(agent_counts)))
-        self.ax[0, 0].set_xticklabels(agent_counts)
-        self.ax[0, 0].set_xlabel('Number of Agents')
-        self.ax[0, 0].set_ylabel('Time Steps')
-        self.ax[0, 0].grid(True)
-        
-        # Plot average coverage
-        avg_coverage = [np.mean(results[count]['coverage'])*100 for count in agent_counts]
-        std_coverage = [np.std(results[count]['coverage'])*100 for count in agent_counts]
-        
-        self.ax[0, 1].bar(range(len(agent_counts)), avg_coverage, yerr=std_coverage)
-        self.ax[0, 1].set_title('Average Coverage by Agent Count')
-        self.ax[0, 1].set_xticks(range(len(agent_counts)))
-        self.ax[0, 1].set_xticklabels(agent_counts)
-        self.ax[0, 1].set_xlabel('Number of Agents')
-        self.ax[0, 1].set_ylabel('Coverage (%)')
-        self.ax[0, 1].grid(True)
-        
-        # Plot average path length
-        avg_path_length = [np.mean(results[count]['avg_path_length']) for count in agent_counts]
-        std_path_length = [np.std(results[count]['avg_path_length']) for count in agent_counts]
-        
-        self.ax[1, 0].bar(range(len(agent_counts)), avg_path_length, yerr=std_path_length)
-        self.ax[1, 0].set_title('Average Path Length by Agent Count')
-        self.ax[1, 0].set_xticks(range(len(agent_counts)))
-        self.ax[1, 0].set_xticklabels(agent_counts)
-        self.ax[1, 0].set_xlabel('Number of Agents')
-        self.ax[1, 0].set_ylabel('Path Length')
-        self.ax[1, 0].grid(True)
-        
-        # Plot average rescue rate over time for different agent counts
-        for i, count in enumerate(agent_counts):
-            # Get average rescue rate across trials at each time step
-            rates = results[count]['rescue_rates']
-            max_len = max(len(rate) for rate in rates)
+        if hasattr(self, 'results_window'):
+            self.results_window.deiconify()
             
-            # Pad shorter arrays with final value
-            padded_rates = []
-            for rate in rates:
-                padded = rate.copy()
-                if len(padded) < max_len:
-                    padded.extend([padded[-1]] * (max_len - len(padded)))
-                padded_rates.append(padded)
+            # Clear previous plots
+            for ax_row in self.ax:
+                for ax in ax_row:
+                    ax.clear()
             
-            # Calculate average rescue rate at each time step
-            avg_rate = np.mean(padded_rates, axis=0)
+            # Plot average completion time for different agent counts
+            agent_counts = list(results.keys())
+            agent_counts.sort()  # Ensure counts are in ascending order
+            avg_completion_times = [np.mean(results[count]['completion_times']) for count in agent_counts]
+            std_completion_times = [np.std(results[count]['completion_times']) for count in agent_counts]
             
-            # Plot
-            self.ax[1, 1].plot(avg_rate, label=f"{count} Agents")
-        
-        self.ax[1, 1].set_title('Average Rescue Rate Over Time')
-        self.ax[1, 1].set_xlabel('Time Steps')
-        self.ax[1, 1].set_ylabel('Fraction Rescued')
-        self.ax[1, 1].legend()
-        self.ax[1, 1].grid(True)
-        
-        self.fig.tight_layout()
-        self.canvas_fig.draw()
+            self.ax[0, 0].bar(range(len(agent_counts)), avg_completion_times, yerr=std_completion_times)
+            self.ax[0, 0].set_title('Average Completion Time by Agent Count')
+            self.ax[0, 0].set_xticks(range(len(agent_counts)))
+            self.ax[0, 0].set_xticklabels(agent_counts)
+            self.ax[0, 0].set_xlabel('Number of Agents')
+            self.ax[0, 0].set_ylabel('Time Steps')
+            self.ax[0, 0].grid(True)
+            
+            # Plot average coverage
+            avg_coverage = [np.mean(results[count]['coverage'])*100 for count in agent_counts]
+            std_coverage = [np.std(results[count]['coverage'])*100 for count in agent_counts]
+            
+            self.ax[0, 1].bar(range(len(agent_counts)), avg_coverage, yerr=std_coverage)
+            self.ax[0, 1].set_title('Average Coverage by Agent Count')
+            self.ax[0, 1].set_xticks(range(len(agent_counts)))
+            self.ax[0, 1].set_xticklabels(agent_counts)
+            self.ax[0, 1].set_xlabel('Number of Agents')
+            self.ax[0, 1].set_ylabel('Coverage (%)')
+            self.ax[0, 1].grid(True)
+            
+            # Plot average path length
+            avg_path_length = [np.mean(results[count]['avg_path_length']) for count in agent_counts]
+            std_path_length = [np.std(results[count]['avg_path_length']) for count in agent_counts]
+            
+            self.ax[1, 0].bar(range(len(agent_counts)), avg_path_length, yerr=std_path_length)
+            self.ax[1, 0].set_title('Average Path Length by Agent Count')
+            self.ax[1, 0].set_xticks(range(len(agent_counts)))
+            self.ax[1, 0].set_xticklabels(agent_counts)
+            self.ax[1, 0].set_xlabel('Number of Agents')
+            self.ax[1, 0].set_ylabel('Path Length')
+            self.ax[1, 0].grid(True)
+            
+            # Plot average rescue rate over time for different agent counts
+            for i, count in enumerate(agent_counts):
+                # Get average rescue rate across trials at each time step
+                rates = results[count]['rescue_rates']
+                max_len = max(len(rate) for rate in rates)
+                
+                # Pad shorter arrays with final value
+                padded_rates = []
+                for rate in rates:
+                    padded = rate.copy()
+                    if len(padded) < max_len:
+                        padded.extend([padded[-1]] * (max_len - len(padded)))
+                    padded_rates.append(padded)
+                
+                # Calculate average rescue rate at each time step
+                avg_rate = np.mean(padded_rates, axis=0)
+                
+                # Plot
+                self.ax[1, 1].plot(avg_rate, label=f"{count} Agents")
+            
+            self.ax[1, 1].set_title('Average Rescue Rate Over Time')
+            self.ax[1, 1].set_xlabel('Time Steps')
+            self.ax[1, 1].set_ylabel('Fraction Rescued')
+            self.ax[1, 1].legend()
+            self.ax[1, 1].grid(True)
+            
+            self.fig.tight_layout()
+            self.canvas_fig.draw()
         
         # Print statistical summary
         print("\nBATCH EXPERIMENT SUMMARY")
         print("========================")
-        print(f"Strategy: {self.strategy_var.get()}")
+        print(f"Strategy: {self.strategy_var.get() if hasattr(self, 'strategy_var') else self.current_strategy}")
         for count in agent_counts:
             print(f"\nAgent Count: {count}")
             print(f"Average Completion Time: {np.mean(results[count]['completion_times']):.1f} ± {np.std(results[count]['completion_times']):.1f}")
@@ -604,10 +651,11 @@ class ExperimentController:
     def compare_strategies(self):
         """Run experiments to compare different coordination strategies"""
         # Disable UI during comparison
-        self.start_button.config(state=tk.DISABLED)
-        self.reset_button.config(state=tk.DISABLED)
-        self.run_trials_button.config(state=tk.DISABLED)
-        self.compare_strategies_button.config(state=tk.DISABLED)
+        if hasattr(self, 'start_button'):
+            self.start_button.config(state=tk.DISABLED)
+            self.reset_button.config(state=tk.DISABLED)
+            self.run_trials_button.config(state=tk.DISABLED)
+            self.compare_strategies_button.config(state=tk.DISABLED)
         
         # Parameters
         strategies = ["basic", "stigmergy", "communication"]
@@ -631,7 +679,8 @@ class ExperimentController:
                 for trial in range(trials_per_config):
                     # Setup trial
                     self.reset_simulation()
-                    self.agent_count_var.set(agent_count)
+                    if hasattr(self, 'agent_count_var'):
+                        self.agent_count_var.set(agent_count)
                     self.create_agents(agent_count, strategy)
                     
                     # Run simulation automatically until completion
@@ -680,10 +729,11 @@ class ExperimentController:
         self.display_comparison_results(comparison_results)
         
         # Re-enable UI
-        self.start_button.config(state=tk.NORMAL, text="Start", command=self.start_simulation)
-        self.reset_button.config(state=tk.NORMAL)
-        self.run_trials_button.config(state=tk.NORMAL)
-        self.compare_strategies_button.config(state=tk.NORMAL)
+        if hasattr(self, 'start_button'):
+            self.start_button.config(state=tk.NORMAL, text="Start", command=self.start_simulation)
+            self.reset_button.config(state=tk.NORMAL)
+            self.run_trials_button.config(state=tk.NORMAL)
+            self.compare_strategies_button.config(state=tk.NORMAL)
     
     def save_comparison_results(self, results):
         """Save strategy comparison results to file"""
@@ -709,88 +759,90 @@ class ExperimentController:
                         ])
         
         print(f"Comparison results saved to {filename}")
+        return filename
     
     def display_comparison_results(self, results):
         """Display results comparing different coordination strategies"""
         # Show results window
-        self.results_window.deiconify()
-        
-        # Clear previous plots
-        for ax_row in self.ax:
-            for ax in ax_row:
-                ax.clear()
-        
-        # Extract data for plotting
-        strategies = list(results.keys())
-        agent_counts = list(results[strategies[0]].keys())
-        agent_counts.sort()
-        
-        # Set up x-axis positions for grouped bars
-        x = np.arange(len(agent_counts))
-        width = 0.25  # Width of bars
-        
-        # Plot completion times
-        for i, strategy in enumerate(strategies):
-            avg_times = [np.mean(results[strategy][count]['completion_times']) for count in agent_counts]
-            std_times = [np.std(results[strategy][count]['completion_times']) for count in agent_counts]
+        if hasattr(self, 'results_window'):
+            self.results_window.deiconify()
             
-            self.ax[0, 0].bar(x + (i-1)*width, avg_times, width, yerr=std_times, label=strategy.capitalize())
-        
-        self.ax[0, 0].set_title('Completion Time by Strategy')
-        self.ax[0, 0].set_xticks(x)
-        self.ax[0, 0].set_xticklabels(agent_counts)
-        self.ax[0, 0].set_xlabel('Number of Agents')
-        self.ax[0, 0].set_ylabel('Time Steps')
-        self.ax[0, 0].legend()
-        self.ax[0, 0].grid(True)
-        
-        # Plot coverage
-        for i, strategy in enumerate(strategies):
-            avg_coverage = [np.mean(results[strategy][count]['coverage'])*100 for count in agent_counts]
-            std_coverage = [np.std(results[strategy][count]['coverage'])*100 for count in agent_counts]
+            # Clear previous plots
+            for ax_row in self.ax:
+                for ax in ax_row:
+                    ax.clear()
             
-            self.ax[0, 1].bar(x + (i-1)*width, avg_coverage, width, yerr=std_coverage, label=strategy.capitalize())
-        
-        self.ax[0, 1].set_title('Coverage by Strategy')
-        self.ax[0, 1].set_xticks(x)
-        self.ax[0, 1].set_xticklabels(agent_counts)
-        self.ax[0, 1].set_xlabel('Number of Agents')
-        self.ax[0, 1].set_ylabel('Coverage (%)')
-        self.ax[0, 1].legend()
-        self.ax[0, 1].grid(True)
-        
-        # Plot average path length
-        for i, strategy in enumerate(strategies):
-            avg_path = [np.mean(results[strategy][count]['avg_path_length']) for count in agent_counts]
-            std_path = [np.std(results[strategy][count]['avg_path_length']) for count in agent_counts]
+            # Extract data for plotting
+            strategies = list(results.keys())
+            agent_counts = list(results[strategies[0]].keys())
+            agent_counts.sort()
             
-            self.ax[1, 0].bar(x + (i-1)*width, avg_path, width, yerr=std_path, label=strategy.capitalize())
-        
-        self.ax[1, 0].set_title('Path Length by Strategy')
-        self.ax[1, 0].set_xticks(x)
-        self.ax[1, 0].set_xticklabels(agent_counts)
-        self.ax[1, 0].set_xlabel('Number of Agents')
-        self.ax[1, 0].set_ylabel('Average Path Length')
-        self.ax[1, 0].legend()
-        self.ax[1, 0].grid(True)
-        
-        # Plot average idle time
-        for i, strategy in enumerate(strategies):
-            avg_idle = [np.mean(results[strategy][count]['idle_times']) for count in agent_counts]
-            std_idle = [np.std(results[strategy][count]['idle_times']) for count in agent_counts]
+            # Set up x-axis positions for grouped bars
+            x = np.arange(len(agent_counts))
+            width = 0.25  # Width of bars
             
-            self.ax[1, 1].bar(x + (i-1)*width, avg_idle, width, yerr=std_idle, label=strategy.capitalize())
-        
-        self.ax[1, 1].set_title('Idle Time by Strategy')
-        self.ax[1, 1].set_xticks(x)
-        self.ax[1, 1].set_xticklabels(agent_counts)
-        self.ax[1, 1].set_xlabel('Number of Agents')
-        self.ax[1, 1].set_ylabel('Average Idle Time')
-        self.ax[1, 1].legend()
-        self.ax[1, 1].grid(True)
-        
-        self.fig.tight_layout()
-        self.canvas_fig.draw()
+            # Plot completion times
+            for i, strategy in enumerate(strategies):
+                avg_times = [np.mean(results[strategy][count]['completion_times']) for count in agent_counts]
+                std_times = [np.std(results[strategy][count]['completion_times']) for count in agent_counts]
+                
+                self.ax[0, 0].bar(x + (i-1)*width, avg_times, width, yerr=std_times, label=strategy.capitalize())
+            
+            self.ax[0, 0].set_title('Completion Time by Strategy')
+            self.ax[0, 0].set_xticks(x)
+            self.ax[0, 0].set_xticklabels(agent_counts)
+            self.ax[0, 0].set_xlabel('Number of Agents')
+            self.ax[0, 0].set_ylabel('Time Steps')
+            self.ax[0, 0].legend()
+            self.ax[0, 0].grid(True)
+            
+            # Plot coverage
+            for i, strategy in enumerate(strategies):
+                avg_coverage = [np.mean(results[strategy][count]['coverage'])*100 for count in agent_counts]
+                std_coverage = [np.std(results[strategy][count]['coverage'])*100 for count in agent_counts]
+                
+                self.ax[0, 1].bar(x + (i-1)*width, avg_coverage, width, yerr=std_coverage, label=strategy.capitalize())
+            
+            self.ax[0, 1].set_title('Coverage by Strategy')
+            self.ax[0, 1].set_xticks(x)
+            self.ax[0, 1].set_xticklabels(agent_counts)
+            self.ax[0, 1].set_xlabel('Number of Agents')
+            self.ax[0, 1].set_ylabel('Coverage (%)')
+            self.ax[0, 1].legend()
+            self.ax[0, 1].grid(True)
+            
+            # Plot average path length
+            for i, strategy in enumerate(strategies):
+                avg_path = [np.mean(results[strategy][count]['avg_path_length']) for count in agent_counts]
+                std_path = [np.std(results[strategy][count]['avg_path_length']) for count in agent_counts]
+                
+                self.ax[1, 0].bar(x + (i-1)*width, avg_path, width, yerr=std_path, label=strategy.capitalize())
+            
+            self.ax[1, 0].set_title('Path Length by Strategy')
+            self.ax[1, 0].set_xticks(x)
+            self.ax[1, 0].set_xticklabels(agent_counts)
+            self.ax[1, 0].set_xlabel('Number of Agents')
+            self.ax[1, 0].set_ylabel('Average Path Length')
+            self.ax[1, 0].legend()
+            self.ax[1, 0].grid(True)
+            
+            # Plot average idle time
+            for i, strategy in enumerate(strategies):
+                avg_idle = [np.mean(results[strategy][count]['idle_times']) for count in agent_counts]
+                std_idle = [np.std(results[strategy][count]['idle_times']) for count in agent_counts]
+                
+                self.ax[1, 1].bar(x + (i-1)*width, avg_idle, width, yerr=std_idle, label=strategy.capitalize())
+            
+            self.ax[1, 1].set_title('Idle Time by Strategy')
+            self.ax[1, 1].set_xticks(x)
+            self.ax[1, 1].set_xticklabels(agent_counts)
+            self.ax[1, 1].set_xlabel('Number of Agents')
+            self.ax[1, 1].set_ylabel('Average Idle Time')
+            self.ax[1, 1].legend()
+            self.ax[1, 1].grid(True)
+            
+            self.fig.tight_layout()
+            self.canvas_fig.draw()
         
         # Print statistical summary
         print("\nSTRATEGY COMPARISON SUMMARY")
@@ -866,3 +918,415 @@ class ExperimentController:
             text=f"Steps: {self.step_count}",
             tags="step_count"
         )
+    
+    # New methods for automated experimentation
+    
+    def run_automated_phase(self, phase):
+        """Run a specific experimental phase"""
+        if phase == 1:
+            self.run_phase1()
+        elif phase == 2:
+            self.run_phase2()
+        elif phase == 3:
+            self.run_phase3()
+        else:
+            print(f"Unknown phase: {phase}")
+    
+    def run_phase1(self, repetitions=5):
+        """
+        Run Phase 1: Agent Count and Strategy Comparison
+        Tests all combinations of strategies and agent counts.
+        
+        Args:
+            repetitions: Number of repetitions for each configuration
+        """
+        strategies = ["basic", "stigmergy", "communication"]
+        agent_counts = [3, 5, 10]
+        
+        # Fixed settings for Phase 1
+        obstacle_density = 0.15
+        victim_count = 10
+        
+        # Disable UI if in GUI mode
+        if hasattr(self, 'start_button'):
+            self.start_button.config(state=tk.DISABLED)
+            self.reset_button.config(state=tk.DISABLED)
+            self.run_trials_button.config(state=tk.DISABLED)
+        
+        print("\n===== PHASE 1: AGENT COUNT AND STRATEGY COMPARISON =====")
+        print(f"Testing {len(strategies)} strategies × {len(agent_counts)} agent counts × {repetitions} repetitions")
+        print(f"Fixed settings: obstacle_density={obstacle_density}, victims={victim_count}\n")
+        
+        # Create timestamp for this batch
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{self.results_directory}/phase1_results_{timestamp}.csv"
+        
+        # Create CSV file and write header
+        with open(filename, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow([
+                'Phase', 'Strategy', 'Agent_Count', 'Obstacle_Density', 
+                'Victim_Count', 'Trial', 'Completion_Time', 'Coverage', 
+                'Avg_Path_Length', 'Avg_Idle_Time', 'Victims_Rescued', 
+                'Victims_Total', 'Success_Rate'
+            ])
+        
+        # Total trial count for progress tracking
+        total_trials = len(strategies) * len(agent_counts) * repetitions
+        trial_counter = 0
+        
+        # Run trials
+        for strategy in strategies:
+            for agent_count in agent_counts:
+                for rep in range(repetitions):
+                    trial_counter += 1
+                    print(f"Trial {trial_counter}/{total_trials}: {strategy} strategy with {agent_count} agents (rep {rep+1}/{repetitions})")
+                    
+                    # Set seed for reproducibility while maintaining variety between trials
+                    trial_seed = (hash(strategy) + agent_count * 100 + rep) % 10000
+                    random.seed(trial_seed)
+                    np.random.seed(trial_seed)
+                    
+                    # Reset simulation
+                    self.reset_simulation()
+                    
+                    # Set up environment with fixed settings
+                    if hasattr(self, 'obstacle_density_var'):
+                        self.obstacle_density_var.set(obstacle_density)
+                    if hasattr(self, 'victim_count_var'):
+                        self.victim_count_var.set(victim_count)
+                    
+                    self.setup_environment()
+                    
+                    # Create agents based on strategy
+                    self.create_agents(agent_count, strategy)
+                    
+                    # Run simulation until completion
+                    self.running = True
+                    self.step_count = 0
+                    self.environment.start_mission()
+                    
+                    # Run without animation
+                    while self.running and self.step_count < self.max_steps:
+                        prev_rescued = self.environment.victims_rescued
+                        
+                        # Update all agents
+                        for agent in self.agents:
+                            agent.update(self.agents)
+                        
+                        # Check if new victims were rescued
+                        if self.environment.victims_rescued > prev_rescued:
+                            self.metrics['rescue_times'].append(self.step_count)
+                        
+                        # Record rescue rate
+                        self.metrics['rescue_rate'].append(
+                            self.environment.victims_rescued / max(1, self.environment.victims_total)
+                        )
+                        
+                        # Increment step count
+                        self.step_count += 1
+                        
+                        # Check if mission is complete
+                        if self.environment.is_mission_complete() or self.step_count >= self.max_steps:
+                            self.running = False
+                    
+                    # Record metrics
+                    self.record_final_metrics()
+                    
+                    # Calculate success rate
+                    success_rate = self.environment.victims_rescued / max(1, self.environment.victims_total)
+                    
+                    # Append to CSV
+                    with open(filename, 'a', newline='') as csvfile:
+                        writer = csv.writer(csvfile)
+                        writer.writerow([
+                            1,  # Phase
+                            strategy,
+                            agent_count,
+                            obstacle_density,
+                            victim_count,
+                            rep + 1,
+                            self.metrics['completion_time'],
+                            self.metrics['coverage'],
+                            np.mean(self.metrics['path_lengths']),
+                            np.mean(self.metrics['idle_times']),
+                            self.environment.victims_rescued,
+                            self.environment.victims_total,
+                            success_rate
+                        ])
+        
+        # Re-enable UI if in GUI mode
+        if hasattr(self, 'start_button'):
+            self.start_button.config(state=tk.NORMAL, text="Start", command=self.start_simulation)
+            self.reset_button.config(state=tk.NORMAL)
+            self.run_trials_button.config(state=tk.NORMAL)
+        
+        print(f"\nPhase 1 complete. Results saved to {filename}")
+        return filename
+    
+    def run_phase2(self, repetitions=3):
+        """
+        Run Phase 2: Environmental Impact
+        Tests how environment complexity affects performance.
+        
+        Args:
+            repetitions: Number of repetitions for each configuration
+        """
+        strategies = ["basic", "stigmergy", "communication"]
+        obstacle_densities = [0.05, 0.15, 0.25]  # Low, medium, high complexity
+        
+        # Fixed settings for Phase 2
+        agent_count = 5  # Middle value
+        victim_count = 10
+        
+        # Disable UI if in GUI mode
+        if hasattr(self, 'start_button'):
+            self.start_button.config(state=tk.DISABLED)
+            self.reset_button.config(state=tk.DISABLED)
+            self.run_trials_button.config(state=tk.DISABLED)
+        
+        print("\n===== PHASE 2: ENVIRONMENTAL IMPACT =====")
+        print(f"Testing {len(strategies)} strategies × {len(obstacle_densities)} complexity levels × {repetitions} repetitions")
+        print(f"Fixed settings: agent_count={agent_count}, victims={victim_count}\n")
+        
+        # Create timestamp for this batch
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{self.results_directory}/phase2_results_{timestamp}.csv"
+        
+        # Create CSV file and write header
+        with open(filename, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow([
+                'Phase', 'Strategy', 'Agent_Count', 'Obstacle_Density', 
+                'Victim_Count', 'Trial', 'Completion_Time', 'Coverage', 
+                'Avg_Path_Length', 'Avg_Idle_Time', 'Victims_Rescued', 
+                'Victims_Total', 'Success_Rate'
+            ])
+        
+        # Total trial count for progress tracking
+        total_trials = len(strategies) * len(obstacle_densities) * repetitions
+        trial_counter = 0
+        
+        # Run trials
+        for strategy in strategies:
+            for obstacle_density in obstacle_densities:
+                for rep in range(repetitions):
+                    trial_counter += 1
+                    print(f"Trial {trial_counter}/{total_trials}: {strategy} strategy with {obstacle_density} obstacle density (rep {rep+1}/{repetitions})")
+                    
+                    # Set seed for reproducibility
+                    trial_seed = (hash(strategy) + int(obstacle_density * 1000) + rep) % 10000
+                    random.seed(trial_seed)
+                    np.random.seed(trial_seed)
+                    
+                    # Reset simulation
+                    self.reset_simulation()
+                    
+                    # Set up environment with specified obstacle density
+                    if hasattr(self, 'obstacle_density_var'):
+                        self.obstacle_density_var.set(obstacle_density)
+                    if hasattr(self, 'victim_count_var'):
+                        self.victim_count_var.set(victim_count)
+                    
+                    self.setup_environment()
+                    
+                    # Create agents based on strategy
+                    self.create_agents(agent_count, strategy)
+                    
+                    # Run simulation until completion
+                    self.running = True
+                    self.step_count = 0
+                    self.environment.start_mission()
+                    
+                    # Run without animation
+                    while self.running and self.step_count < self.max_steps:
+                        prev_rescued = self.environment.victims_rescued
+                        
+                        # Update all agents
+                        for agent in self.agents:
+                            agent.update(self.agents)
+                        
+                        # Check if new victims were rescued
+                        if self.environment.victims_rescued > prev_rescued:
+                            self.metrics['rescue_times'].append(self.step_count)
+                        
+                        # Record rescue rate
+                        self.metrics['rescue_rate'].append(
+                            self.environment.victims_rescued / max(1, self.environment.victims_total)
+                        )
+                        
+                        # Increment step count
+                        self.step_count += 1
+                        
+                        # Check if mission is complete
+                        if self.environment.is_mission_complete() or self.step_count >= self.max_steps:
+                            self.running = False
+                    
+                    # Record metrics
+                    self.record_final_metrics()
+                    
+                    # Calculate success rate
+                    success_rate = self.environment.victims_rescued / max(1, self.environment.victims_total)
+                    
+                    # Append to CSV
+                    with open(filename, 'a', newline='') as csvfile:
+                        writer = csv.writer(csvfile)
+                        writer.writerow([
+                            2,  # Phase
+                            strategy,
+                            agent_count,
+                            obstacle_density,
+                            victim_count,
+                            rep + 1,
+                            self.metrics['completion_time'],
+                            self.metrics['coverage'],
+                            np.mean(self.metrics['path_lengths']),
+                            np.mean(self.metrics['idle_times']),
+                            self.environment.victims_rescued,
+                            self.environment.victims_total,
+                            success_rate
+                        ])
+        
+        # Re-enable UI if in GUI mode
+        if hasattr(self, 'start_button'):
+            self.start_button.config(state=tk.NORMAL, text="Start", command=self.start_simulation)
+            self.reset_button.config(state=tk.NORMAL)
+            self.run_trials_button.config(state=tk.NORMAL)
+        
+        print(f"\nPhase 2 complete. Results saved to {filename}")
+        return filename
+    
+    def run_phase3(self, repetitions=1):
+        """
+        Run Phase 3: Communication Constraints
+        Tests how communication range affects performance of communicating agents.
+        
+        Args:
+            repetitions: Number of repetitions for each configuration
+        """
+        agent_counts = [3, 5, 10]
+        comm_ranges = [float('inf'), 5, 2]  # Unlimited, medium, limited
+        
+        # Fixed settings for Phase 3
+        strategy = "communication"  # Only test communication-based agents
+        obstacle_density = 0.15  # Medium complexity
+        victim_count = 10
+        
+        # Disable UI if in GUI mode
+        if hasattr(self, 'start_button'):
+            self.start_button.config(state=tk.DISABLED)
+            self.reset_button.config(state=tk.DISABLED)
+            self.run_trials_button.config(state=tk.DISABLED)
+        
+        print("\n===== PHASE 3: COMMUNICATION CONSTRAINTS =====")
+        print(f"Testing {len(agent_counts)} agent counts × {len(comm_ranges)} communication ranges × {repetitions} repetitions")
+        print(f"Fixed settings: strategy={strategy}, obstacle_density={obstacle_density}, victims={victim_count}\n")
+        
+        # Create timestamp for this batch
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{self.results_directory}/phase3_results_{timestamp}.csv"
+        
+        # Create CSV file and write header
+        with open(filename, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow([
+                'Phase', 'Strategy', 'Agent_Count', 'Obstacle_Density', 
+                'Victim_Count', 'Comm_Range', 'Trial', 'Completion_Time', 
+                'Coverage', 'Avg_Path_Length', 'Avg_Idle_Time', 
+                'Victims_Rescued', 'Victims_Total', 'Success_Rate'
+            ])
+        
+        # Total trial count for progress tracking
+        total_trials = len(agent_counts) * len(comm_ranges) * repetitions
+        trial_counter = 0
+        
+        # Run trials
+        for agent_count in agent_counts:
+            for comm_range in comm_ranges:
+                for rep in range(repetitions):
+                    trial_counter += 1
+                    range_label = "unlimited" if comm_range == float('inf') else str(comm_range)
+                    print(f"Trial {trial_counter}/{total_trials}: {agent_count} agents with {range_label} comm range (rep {rep+1}/{repetitions})")
+                    
+                    # Set seed for reproducibility
+                    trial_seed = (agent_count * 100 + (999 if comm_range == float('inf') else int(comm_range * 100)) + rep) % 10000
+                    random.seed(trial_seed)
+                    np.random.seed(trial_seed)
+                    
+                    # Reset simulation
+                    self.reset_simulation()
+                    
+                    # Set up environment with fixed settings
+                    if hasattr(self, 'obstacle_density_var'):
+                        self.obstacle_density_var.set(obstacle_density)
+                    if hasattr(self, 'victim_count_var'):
+                        self.victim_count_var.set(victim_count)
+                    
+                    self.setup_environment()
+                    
+                    # Create communication agents with specified comm range
+                    self.create_agents(agent_count, strategy, comm_range)
+                    
+                    # Run simulation until completion
+                    self.running = True
+                    self.step_count = 0
+                    self.environment.start_mission()
+                    
+                    # Run without animation
+                    while self.running and self.step_count < self.max_steps:
+                        prev_rescued = self.environment.victims_rescued
+                        
+                        # Update all agents
+                        for agent in self.agents:
+                            agent.update(self.agents)
+                        
+                        # Check if new victims were rescued
+                        if self.environment.victims_rescued > prev_rescued:
+                            self.metrics['rescue_times'].append(self.step_count)
+                        
+                        # Record rescue rate
+                        self.metrics['rescue_rate'].append(
+                            self.environment.victims_rescued / max(1, self.environment.victims_total)
+                        )
+                        
+                        # Increment step count
+                        self.step_count += 1
+                        
+                        # Check if mission is complete
+                        if self.environment.is_mission_complete() or self.step_count >= self.max_steps:
+                            self.running = False
+                    
+                    # Record metrics
+                    self.record_final_metrics()
+                    
+                    # Calculate success rate
+                    success_rate = self.environment.victims_rescued / max(1, self.environment.victims_total)
+                    
+                    # Append to CSV
+                    with open(filename, 'a', newline='') as csvfile:
+                        writer = csv.writer(csvfile)
+                        writer.writerow([
+                            3,  # Phase
+                            strategy,
+                            agent_count,
+                            obstacle_density,
+                            victim_count,
+                            "inf" if comm_range == float('inf') else comm_range,
+                            rep + 1,
+                            self.metrics['completion_time'],
+                            self.metrics['coverage'],
+                            np.mean(self.metrics['path_lengths']),
+                            np.mean(self.metrics['idle_times']),
+                            self.environment.victims_rescued,
+                            self.environment.victims_total,
+                            success_rate
+                        ])
+        
+        # Re-enable UI if in GUI mode
+        if hasattr(self, 'start_button'):
+            self.start_button.config(state=tk.NORMAL, text="Start", command=self.start_simulation)
+            self.reset_button.config(state=tk.NORMAL)
+            self.run_trials_button.config(state=tk.NORMAL)
+        
+        print(f"\nPhase 3 complete. Results saved to {filename}")
+        return filename
