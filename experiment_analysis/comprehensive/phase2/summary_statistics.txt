@@ -1,0 +1,52 @@
+PHASE 2: ENVIRONMENTAL IMPACT SUMMARY
+===================================
+
+OVERALL STATISTICS
+-----------------
+Total trials: 27
+Average completion time: 141.81 steps
+Average coverage: 35.48%
+Average success rate: 105.56%
+
+STRATEGY COMPARISON
+------------------
+Strategy: basic
+  Completion Time: 150.00 ± 319.65
+  Coverage: 45.20% ± 24.46%
+  Success Rate: 111.11% ± 33.33%
+
+Strategy: stigmergy
+  Completion Time: 249.22 ± 426.00
+  Coverage: 36.79% ± 24.83%
+  Success Rate: 105.56% ± 39.09%
+
+Strategy: communication
+  Completion Time: 26.22 ± 19.73
+  Coverage: 24.44% ± 8.15%
+  Success Rate: 100.00% ± 0.00%
+
+OBSTACLE DENSITY COMPARISON
+-------------------------
+Obstacle Density: 0.05
+  Completion Time: 247.22 ± 427.29
+  Coverage: 41.65% ± 34.25%
+  Success Rate: 122.22% ± 44.10%
+
+Obstacle Density: 0.15
+  Completion Time: 30.11 ± 26.69
+  Coverage: 29.04% ± 10.69%
+  Success Rate: 100.00% ± 0.00%
+
+Obstacle Density: 0.25
+  Completion Time: 148.11 ± 319.77
+  Coverage: 35.74% ± 12.21%
+  Success Rate: 94.44% ± 16.67%
+
+STRATEGY PERFORMANCE BY OBSTACLE DENSITY
+--------------------------------------
+Obstacle_Density        0.05       0.15        0.25
+Strategy                                           
+basic             348.333333  55.000000   46.666667
+communication      35.333333  16.333333   27.000000
+stigmergy         358.000000  19.000000  370.666667
+

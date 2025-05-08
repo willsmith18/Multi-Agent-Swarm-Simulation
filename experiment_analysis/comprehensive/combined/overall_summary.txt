@@ -1,0 +1,70 @@
+OVERALL EXPERIMENT SUMMARY
+=========================
+
+EXPERIMENTAL OVERVIEW
+-------------------
+Phase 1: Agent Count and Strategy Comparison
+Phase 2: Environmental Impact
+Phase 3: Communication Constraints
+
+Total trials across all phases: 81
+
+STRATEGY COMPARISON SUMMARY
+-------------------------
+Strategy: basic
+  Overall Performance:
+    Completion Time: 84.42 ± 197.61
+    Coverage: 38.80% ± 18.26%
+    Success Rate: 104.17% ± 20.41%
+
+  Performance by Phase:
+    Phase 1: Completion Time = 45.07, Coverage = 34.97%
+    Phase 2: Completion Time = 150.00, Coverage = 45.20%
+
+Strategy: stigmergy
+  Overall Performance:
+    Completion Time: 245.71 ± 397.39
+    Coverage: 45.01% ± 25.77%
+    Success Rate: 112.27% ± 35.59%
+
+  Performance by Phase:
+    Phase 1: Completion Time = 243.60, Coverage = 49.94%
+    Phase 2: Completion Time = 249.22, Coverage = 36.79%
+
+Strategy: communication
+  Overall Performance:
+    Completion Time: 221.61 ± 379.01
+    Coverage: 40.37% ± 28.76%
+    Success Rate: 117.31% ± 37.53%
+
+  Performance by Phase:
+    Phase 1: Completion Time = 223.20, Coverage = 39.93%
+    Phase 2: Completion Time = 26.22, Coverage = 24.44%
+    Phase 3: Completion Time = 414.33, Coverage = 57.03%
+
+KEY FINDINGS
+-----------
+1. Agent Count Effects:
+   - Optimal agent count across all experiments: 3
+   - Performance ranking by agent count (best to worst): 3, 5, 10
+
+2. Strategy Effects:
+   - Best performing strategy across all experiments: basic
+   - Performance ranking by strategy (best to worst): basic, communication, stigmergy
+
+3. Environmental Effects:
+   - Performance ranking by obstacle density (best to worst): 0.25, 0.15, 0.05
+
+4. Communication Effects:
+   - Performance ranking by communication range (best to worst): Unlimited, 2.0, 5.0
+
+CONCLUSIONS AND RECOMMENDATIONS
+-------------------------------
+Based on the experimental results, the basic strategy with 3 agents appears to offer the best balance of efficiency and coverage.
+
+Special consideration: Different strategies perform better in different environments:
+  - communication is best for obstacle density 0.05
+  - basic is best for obstacle density 0.15
+  - communication is best for obstacle density 0.25
+
+Further research could explore adaptive strategies that select the appropriate coordination method based on environmental conditions and available resources.

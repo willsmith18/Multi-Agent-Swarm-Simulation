@@ -1,0 +1,53 @@
+PHASE 3: COMMUNICATION CONSTRAINTS SUMMARY
+=========================================
+
+OVERALL STATISTICS
+-----------------
+Total trials: 9
+Average completion time: 414.33 steps
+Average coverage: 57.03%
+Average success rate: 133.46%
+
+COMMUNICATION RANGE COMPARISON
+-----------------------------
+Communication Range: Unlimited
+  Completion Time: 123.00 ± 200.92
+  Coverage: 31.52% ± 26.13%
+  Success Rate: 100.00% ± 0.00%
+
+Communication Range: 2.0
+  Completion Time: 401.67 ± 526.90
+  Coverage: 57.89% ± 38.59%
+  Success Rate: 137.04% ± 64.15%
+
+Communication Range: 5.0
+  Completion Time: 718.33 ± 487.86
+  Coverage: 81.69% ± 19.33%
+  Success Rate: 163.33% ± 55.08%
+
+AGENT COUNT COMPARISON
+---------------------
+Agent Count: 3
+  Completion Time: 236.00 ± 105.28
+  Coverage: 57.70% ± 5.53%
+  Success Rate: 100.00% ± 0.00%
+
+Agent Count: 5
+  Completion Time: 669.33 ± 572.73
+  Coverage: 70.30% ± 48.86%
+  Success Rate: 167.04% ± 59.01%
+
+Agent Count: 10
+  Completion Time: 337.67 ± 573.60
+  Coverage: 43.09% ± 38.23%
+  Success Rate: 133.33% ± 57.74%
+
+INTERACTION EFFECTS
+------------------
+Agent Count x Communication Range on Completion Time:
+Comm_Range      2.0     5.0    inf
+Agent_Count                       
+3             198.0   155.0  355.0
+5            1000.0  1000.0    8.0
+10              7.0  1000.0    6.0
+

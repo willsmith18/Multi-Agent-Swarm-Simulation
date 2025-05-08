@@ -1,0 +1,44 @@
+PHASE 1: AGENT COUNT AND STRATEGY COMPARISON
+===========================================
+
+OVERALL STATISTICS
+-----------------
+Total trials: 45
+Average completion time: 170.62 steps
+Average coverage: 41.61%
+Average success rate: 111.43%
+
+STRATEGY COMPARISON
+------------------
+Strategy: basic
+  Completion Time: 45.07 ± 36.64
+  Coverage: 34.97% ± 12.80%
+  Success Rate: 100.00% ± 0.00%
+
+Strategy: stigmergy
+  Completion Time: 243.60 ± 394.62
+  Coverage: 49.94% ± 25.87%
+  Success Rate: 116.30% ± 34.08%
+
+Strategy: communication
+  Completion Time: 223.20 ± 402.79
+  Coverage: 39.93% ± 29.61%
+  Success Rate: 118.00% ± 37.45%
+
+AGENT COUNT COMPARISON
+---------------------
+Agent Count: 3
+  Completion Time: 120.00 ± 248.06
+  Coverage: 34.66% ± 20.87%
+  Success Rate: 106.00% ± 23.24%
+
+Agent Count: 5
+  Completion Time: 166.53 ± 339.53
+  Coverage: 41.87% ± 23.78%
+  Success Rate: 109.78% ± 25.93%
+
+Agent Count: 10
+  Completion Time: 225.33 ± 402.59
+  Coverage: 48.30% ± 27.09%
+  Success Rate: 118.52% ± 38.41%
+
