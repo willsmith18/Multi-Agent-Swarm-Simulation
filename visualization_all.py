@@ -14,15 +14,14 @@ phase3_path = 'experiment_results/phase3_results_20250508_112039.csv'
 output_dir = 'experiment_analysis/comprehensive'
 os.makedirs(output_dir, exist_ok=True)
 
-# Custom color palette for consistent visualization
 colors = ['#2c7bb6', '#7fcdbb', '#d7191c']
 sns.set_palette(sns.color_palette(colors))
 
-# Helper function to ensure directory exists
+# Ensure directory exists
 def ensure_dir(dir_path):
     os.makedirs(dir_path, exist_ok=True)
 
-# Helper function for creating heatmaps
+# Create heatmaps
 def create_heatmap(data, x_col, y_col, value_col, title, filename, fmt='.2f'):
     plt.figure(figsize=(10, 8))
     pivot = data.pivot_table(index=y_col, columns=x_col, values=value_col, aggfunc='mean')
@@ -32,7 +31,7 @@ def create_heatmap(data, x_col, y_col, value_col, title, filename, fmt='.2f'):
     plt.savefig(os.path.join(output_dir, filename), dpi=300)
     plt.close()
 
-# Helper function for creating box plots
+# Create box plots
 def create_boxplot(data, x_col, y_col, hue_col, title, filename):
     plt.figure(figsize=(12, 6))
     sns.boxplot(x=x_col, y=y_col, hue=hue_col, data=data)
@@ -41,7 +40,7 @@ def create_boxplot(data, x_col, y_col, hue_col, title, filename):
     plt.savefig(os.path.join(output_dir, filename), dpi=300)
     plt.close()
 
-# Helper function for creating line plots
+# Create line plots
 def create_lineplot(data, x_col, y_col, hue_col, title, filename, sort_key=None):
     plt.figure(figsize=(12, 6))
     
@@ -261,7 +260,7 @@ try:
         if isinstance(phase3_data['Comm_Range'].iloc[0], str):
             phase3_data['Comm_Range'] = phase3_data['Comm_Range'].replace('inf', float('inf'))
     
-    # For plotting purposes, replace inf with a label
+    # Replace inf with a label
     plot_data = phase3_data.copy()
     if 'Comm_Range' in plot_data.columns:
         plot_data['Comm_Range_Label'] = plot_data['Comm_Range'].apply(

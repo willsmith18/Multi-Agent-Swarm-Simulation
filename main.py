@@ -1,7 +1,5 @@
 """
 Main module for the Search and Rescue simulation.
-This is the entry point for running the simulations.
-Enhanced with automated experiment capabilities.
 """
 
 import tkinter as tk
@@ -83,7 +81,7 @@ def run_batch_mode(args):
     # Create output directory
     os.makedirs(args.output, exist_ok=True)
     
-    # Create headless controller (no GUI)
+    # Create headless controller
     controller = ExperimentController(window=None)
     controller.results_directory = args.output
     controller.max_steps = args.max_steps
@@ -180,7 +178,7 @@ def run_phase_experiment(args, phase):
     # Create output directory
     os.makedirs(args.output, exist_ok=True)
     
-    # Create headless controller (no GUI)
+    # Create headless controller 
     controller = ExperimentController(window=None)
     controller.results_directory = args.output
     controller.max_steps = args.max_steps
@@ -224,7 +222,7 @@ def analyze_results(args):
     # Create visualization
     try:
         # Try to import visualization utilities
-        from visualization_utils import create_comprehensive_report
+        from visualization_all import create_comprehensive_report
         output_dir = create_comprehensive_report(args.files, args.output)
         print(f"Analysis complete. Results saved to: {output_dir}")
     except ImportError:
@@ -280,7 +278,7 @@ def analyze_results_basic(files, output_dir):
                     f.write(f"  Success Rate: {strategy_data['Success_Rate'].mean()*100:.2f}% ± {strategy_data['Success_Rate'].std()*100:.2f}%\n")
                 f.write("\n")
     
-    # Create some basic plots
+    # Create basic plots
     try:
         # Plot completion time by strategy and agent count
         if 'Strategy' in data.columns and 'Agent_Count' in data.columns and 'Completion_Time' in data.columns:

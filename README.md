@@ -101,40 +101,6 @@ Fixed settings:
 - Medium environmental complexity
 - 10 victims in clustered distribution
 
-## Command Line Arguments
-
-```
-usage: main.py [-h] [--mode {gui,batch,phase1,phase2,phase3,analyze}]
-               [--strategy {basic,stigmergy,communication}] [--agents AGENTS]
-               [--grid_size GRID_SIZE] [--obstacle_density OBSTACLE_DENSITY]
-               [--victims VICTIMS] [--repetitions REPETITIONS]
-               [--comm_range COMM_RANGE] [--max_steps MAX_STEPS]
-               [--output OUTPUT] [--files FILES [FILES ...]]
-
-Search and Rescue Simulation
-
-optional arguments:
-  -h, --help            show this help message and exit
-  --mode {gui,batch,phase1,phase2,phase3,analyze}
-                        Operation mode (default: gui)
-  --strategy {basic,stigmergy,communication}
-                        Coordination strategy (default: basic)
-  --agents AGENTS       Number of agents (default: 3)
-  --grid_size GRID_SIZE
-                        Grid size (default: 20)
-  --obstacle_density OBSTACLE_DENSITY
-                        Obstacle density (default: 0.15)
-  --victims VICTIMS     Number of victims (default: 10)
-  --repetitions REPETITIONS
-                        Number of repetitions for experiments
-  --comm_range COMM_RANGE
-                        Communication range for communication strategy (default: 5.0)
-  --max_steps MAX_STEPS
-                        Maximum steps per trial (default: 1000)
-  --output OUTPUT       Output directory for results (default: experiment_results)
-  --files FILES [FILES ...]
-                        CSV result files to analyze (required for analysis mode)
-```
 
 ## Project Structure
 
@@ -182,10 +148,3 @@ python main.py --mode analyze --output compare/analysis --files compare/basic/*.
 # Single trial with visual feedback
 python main.py --mode gui --strategy communication --agents 3
 ```
-
-## Notes for Your Project
-
-- Feel free to modify the coordination strategies in `agents.py` to test different algorithms
-- The environment can be configured in `environment.py` to create different scenarios
-- For your final report, running all phases with sufficient repetitions will provide comprehensive data
-- Save all experimental results in organized directories for easy analysis later

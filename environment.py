@@ -10,11 +10,11 @@ import numpy as np
 import time
 
 class DisasterEnvironment:
-    """Simple 2D grid disaster environment for search and rescue simulation"""
+    """2D grid disaster environment for search and rescue simulation"""
     
     def __init__(self, grid_size=20, cell_size=30):
-        self.grid_size = grid_size  # 20x20 grid
-        self.cell_size = cell_size  # Each cell is 30x30 pixels
+        self.grid_size = grid_size 
+        self.cell_size = cell_size  
         self.width = grid_size * cell_size
         self.height = grid_size * cell_size
         
@@ -31,14 +31,11 @@ class DisasterEnvironment:
         for i in range(self.grid_size):
             for j in range(self.grid_size):
                 if random.random() < obstacle_density:
-                    self.grid[i][j] = 1  # 1 represents obstacle
+                    self.grid[i][j] = 1 
 
     def verify_victims_accessibility(self):
         """
         Verify that all victims in the environment are accessible.
-        Returns:
-            tuple: (all_accessible, inaccessible_victims) where all_accessible is a boolean
-                and inaccessible_victims is a list of (x, y) coordinates of unreachable victims
         """
         inaccessible_victims = []
         victim_positions = []
@@ -60,12 +57,6 @@ class DisasterEnvironment:
         """
         Check if the target position is accessible from any valid starting position.
         Uses breadth-first search to find a path.
-        
-        Args:
-            target_pos: (x, y) coordinates of the target position
-            
-        Returns:
-            bool: True if target is accessible, False otherwise
         """
         # BFS to find a path to victim
         queue = []
@@ -78,13 +69,12 @@ class DisasterEnvironment:
                     queue.append((i, j))
                     visited.add((i, j))
         
-        # Cardinal directions: up, right, down, left
         directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]
         
         while queue:
             current = queue.pop(0)
             
-            # Check if we're adjacent to the target
+            # Check if adjacent to the target
             if (abs(current[0] - target_pos[0]) == 1 and current[1] == target_pos[1]) or \
             (abs(current[1] - target_pos[1]) == 1 and current[0] == target_pos[0]):
                 return True
@@ -96,7 +86,7 @@ class DisasterEnvironment:
                 
                 # Check if the next position is valid and not visited
                 if (0 <= next_x < self.grid_size and 0 <= next_y < self.grid_size and
-                    self.grid[next_x][next_y] != 1 and  # Not an obstacle
+                    self.grid[next_x][next_y] != 1 and
                     next_pos not in visited):
                     
                     queue.append(next_pos)
@@ -108,7 +98,7 @@ class DisasterEnvironment:
         """Create a disaster zone with victims clustered in certain areas, ensuring all victims are accessible"""
         # Create 1-3 disaster zones (clusters of victims)
         zone_count = random.randint(1, 3)
-        max_attempts = 100  # Limit attempts to prevent infinite loops
+        max_attempts = 100 
         
         # Reset victim count
         self.victims_total = 0
@@ -148,7 +138,7 @@ class DisasterEnvironment:
                             break
                     
                     if has_adjacent_empty:
-                        self.grid[x][y] = 2  # Place victim
+                        self.grid[x][y] = 2 
                         placed += 1
                         self.victims_total += 1
                 
@@ -159,32 +149,32 @@ class DisasterEnvironment:
         if not all_accessible:
             print(f"Warning: {len(inaccessible)} victims are inaccessible! Removing them.")
             for pos in inaccessible:
-                self.grid[pos[0]][pos[1]] = 0  # Remove inaccessible victim
+                self.grid[pos[0]][pos[1]] = 0
                 self.victims_total -= 1
     
     def get_cell_type(self, x, y):
         """Return the type of cell at grid coordinates (x, y)"""
         if 0 <= x < self.grid_size and 0 <= y < self.grid_size:
             return self.grid[x][y]
-        return -1  # Out of bounds
+        return -1 
     
     def is_valid_position(self, x, y):
         """Check if a position is valid (within bounds and not an obstacle)"""
         if 0 <= x < self.grid_size and 0 <= y < self.grid_size:
-            return self.grid[x][y] != 1  # Not an obstacle
+            return self.grid[x][y] != 1  
         return False
     
     def rescue_victim(self, x, y):
         """Attempt to rescue a victim at location (x, y)"""
         if 0 <= x < self.grid_size and 0 <= y < self.grid_size:
-            if self.grid[x][y] == 2:  # If there's a victim
-                self.grid[x][y] = 0   # Clear cell
+            if self.grid[x][y] == 2:  
+                self.grid[x][y] = 0  
                 self.victims_rescued += 1
                 return True
         return False
     
     def draw(self, canvas):
-        """Draw the environment on a tkinter canvas"""
+        """Draw the environment on canvas"""
         # Clear canvas
         canvas.delete("environment")
         
@@ -196,7 +186,6 @@ class DisasterEnvironment:
                 x2 = x1 + self.cell_size
                 y2 = y1 + self.cell_size
                 
-                # Choose color based on cell type
                 if self.grid[i][j] == 0:    # Empty
                     color = "white"
                 elif self.grid[i][j] == 1:  # Obstacle

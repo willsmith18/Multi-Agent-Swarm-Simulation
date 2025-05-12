@@ -1,7 +1,6 @@
 """
 Controller module for Search and Rescue simulation.
 Manages experiment setup, execution, and metrics collection.
-Enhanced with automated batch experiment capabilities.
 """
 
 import tkinter as tk
@@ -14,7 +13,7 @@ import os
 import random
 from datetime import datetime
 import argparse
-from tqdm import tqdm  # Add this import for progress bars
+from tqdm import tqdm
 
 from environment import DisasterEnvironment
 from agents import Agent, StigmergyAgent, CommunicatingAgent
@@ -31,7 +30,7 @@ class ExperimentController:
         # Create environment
         self.environment = DisasterEnvironment(grid_size, cell_size)
         
-        # GUI components (only if window is provided)
+        # GUI components
         if window:
             self.window.title("Search and Rescue Simulation")
             
@@ -57,7 +56,7 @@ class ExperimentController:
         self.running = False
         self.update_interval = 100  # milliseconds
         self.step_count = 0
-        self.max_steps = 1000  # Prevent infinite simulations
+        self.max_steps = 1000 
         self.current_strategy = "basic"
         
         # Performance metrics
@@ -231,12 +230,12 @@ class ExperimentController:
                                 break
                         
                         if has_adjacent_empty:
-                            self.environment.grid[x][y] = 2  # Place victim
+                            self.environment.grid[x][y] = 2 
                             if self.environment._is_accessible((x, y)):
                                 placed += 1
                                 self.environment.victims_total += 1
                             else:
-                                self.environment.grid[x][y] = 0  # Remove if not accessible
+                                self.environment.grid[x][y] = 0 
                     
                     attempts += 1
                 
@@ -637,7 +636,7 @@ class ExperimentController:
             self.fig.tight_layout()
             self.canvas_fig.draw()
         
-        # Print statistical summary
+        # Print summary
         print("\nBATCH EXPERIMENT SUMMARY")
         print("========================")
         print(f"Strategy: {self.strategy_var.get() if hasattr(self, 'strategy_var') else self.current_strategy}")
@@ -779,7 +778,7 @@ class ExperimentController:
             
             # Set up x-axis positions for grouped bars
             x = np.arange(len(agent_counts))
-            width = 0.25  # Width of bars
+            width = 0.25  
             
             # Plot completion times
             for i, strategy in enumerate(strategies):
@@ -936,9 +935,6 @@ class ExperimentController:
         """
         Run Phase 1: Agent Count and Strategy Comparison
         Tests all combinations of strategies and agent counts.
-        
-        Args:
-            repetitions: Number of repetitions for each configuration
         """
         strategies = ["basic", "stigmergy", "communication"]
         agent_counts = [3, 5, 10]
@@ -1068,9 +1064,6 @@ class ExperimentController:
         """
         Run Phase 2: Environmental Impact
         Tests how environment complexity affects performance.
-        
-        Args:
-            repetitions: Number of repetitions for each configuration
         """
         strategies = ["basic", "stigmergy", "communication"]
         obstacle_densities = [0.05, 0.15, 0.25]  # Low, medium, high complexity
@@ -1200,9 +1193,6 @@ class ExperimentController:
         """
         Run Phase 3: Communication Constraints
         Tests how communication range affects performance of communicating agents.
-        
-        Args:
-            repetitions: Number of repetitions for each configuration
         """
         agent_counts = [3, 5, 10]
         comm_ranges = [float('inf'), 5, 2]  # Unlimited, medium, limited

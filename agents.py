@@ -1,7 +1,7 @@
 """
 Agents module for Search and Rescue simulation.
 Contains different agent implementations with various coordination strategies.
-Enhanced with A* path planning for communicating agents.
+Uses A* path planning for communicating agents.
 """
 
 import random
@@ -10,25 +10,25 @@ import numpy as np
 import heapq
 
 class Agent:
-    """Base search and rescue agent with configurable coordination strategies"""
+    """Base search and rescue agent with changeable coordination strategies"""
     
     def __init__(self, name, environment, x=None, y=None):
         self.name = name
         self.environment = environment
         
-        # Initial position - if not specified, will be randomly placed
+        # Initial position
         self.x = x
         self.y = y
         
         # Agent properties
         self.size = environment.cell_size * 0.8
-        self.sensor_range = 2  # How many cells the agent can see in each direction
+        self.sensor_range = 2 
         self.color = "blue"
         
         # Agent state
         self.rescued_count = 0
-        self.visited_cells = set()  # Track cells the agent has visited
-        self.previous_position = None  # Keep track of previous position to avoid oscillation
+        self.visited_cells = set()  
+        self.previous_position = None  
         
         # For detecting collisions with other agents
         self.planned_move = None
@@ -38,7 +38,7 @@ class Agent:
         self.idle_time = 0    # Time spent not moving
         
         # Coordination strategy
-        self.strategy = "basic"  # Default strategy
+        self.strategy = "basic" 
         
         # Place at random position if location not provided
         if self.x is None or self.y is None:
@@ -73,7 +73,7 @@ class Agent:
                 cell_y = self.y + dy
                 cell_type = self.environment.get_cell_type(cell_x, cell_y)
                 
-                if cell_type != -1:  # Not out of bounds
+                if cell_type != -1: 
                     sensed_data.append({
                         'x': cell_x,
                         'y': cell_y,
@@ -91,11 +91,11 @@ class Agent:
         new_x, new_y = self.planned_move
         
         for agent in agents:
-            if agent is not self:  # Don't check collision with self
+            if agent is not self: 
                 if agent.x == new_x and agent.y == new_y:
                     return True
                     
-                # Also check if agents would swap positions
+                # Check if agents would swap positions
                 if (agent.x == new_x and agent.y == new_y and 
                     agent.previous_position == (self.x, self.y)):
                     return True
@@ -117,7 +117,7 @@ class Agent:
                 self.planned_move = (target['x'], target['y'])
                 return
             
-            # Otherwise, move toward the closest victim
+            # Move toward the closest victim
             dx = target['x'] - self.x
             dy = target['y'] - self.y
             
@@ -209,7 +209,7 @@ class Agent:
             # Update position
             new_x, new_y = self.planned_move
             
-            # Calculate path length (Manhattan distance)
+            # Calculate path length
             self.path_length += abs(new_x - self.x) + abs(new_y - self.y)
             
             # Update position
@@ -264,7 +264,7 @@ class Agent:
             fill=self.color, tags=self.name
         )
         
-        # Draw sensor range indicator (optional)
+        # Draw sensor range indicator 
         range_pixels = self.sensor_range * self.environment.cell_size
         canvas.create_oval(
             center_x - range_pixels, center_y - range_pixels,
@@ -275,7 +275,7 @@ class Agent:
         # Display agent ID
         canvas.create_text(
             center_x, center_y,
-            text=self.name[-1],  # Just the number part of the name
+            text=self.name[-1], 
             fill="white", tags=self.name
         )
 
@@ -286,12 +286,12 @@ class StigmergyAgent(Agent):
     def __init__(self, name, environment, x=None, y=None):
         super().__init__(name, environment, x, y)
         self.strategy = "stigmergy"
-        self.color = "green"  # Different color to distinguish from basic agents
+        self.color = "green" 
         
         # Pheromone map for stigmergy coordination
         self.pheromone_map = np.zeros((environment.grid_size, environment.grid_size))
-        self.pheromone_decay = 0.95  # Rate at which pheromones decay
-        self.pheromone_strength = 1.0  # Strength of deposited pheromones
+        self.pheromone_decay = 0.95 
+        self.pheromone_strength = 1.0 
     
     def plan_move_stigmergy(self, sensed_data, agents):
         """Stigmergy-based coordination using virtual pheromones"""
@@ -404,15 +404,15 @@ class CommunicatingAgent(Agent):
     def __init__(self, name, environment, x=None, y=None):
         super().__init__(name, environment, x, y)
         self.strategy = "communication"
-        self.color = "purple"  # Different color to distinguish
+        self.color = "purple" 
         
-        # Communication range (can be different from sensor range)
+        # Communication range 
         self.comm_range = 5
         
         # Shared knowledge
-        self.known_victims = set()  # Coordinates of known victims
-        self.assigned_victim = None  # Victim this agent is responsible for
-        self.planned_path = []  # Planned path to target
+        self.known_victims = set()  
+        self.assigned_victim = None  
+        self.planned_path = [] 
     
     def communicate(self, agents):
         """Exchange information with other agents within communication range"""
@@ -461,7 +461,7 @@ class CommunicatingAgent(Agent):
     def update_known_victims(self, sensed_data):
         """Update known victims based on sensed data"""
         for cell in sensed_data:
-            if cell['type'] == 2:  # Victim
+            if cell['type'] == 2:
                 self.known_victims.add((cell['x'], cell['y']))
     
     def plan_move_communication(self, sensed_data, agents):
@@ -506,7 +506,6 @@ class CommunicatingAgent(Agent):
     
     def plan_path_to_victim(self, victim_pos):
         """Plan a path to the assigned victim using A* search"""
-        # A* search implementation
         start = (self.x, self.y)
         goal = victim_pos
         
@@ -514,17 +513,15 @@ class CommunicatingAgent(Agent):
         open_set = []
         closed_set = set()
         
-        # Priority queue for open set with f(n) as priority
-        # Format: (f_score, (x, y))
         heapq.heappush(open_set, (0, start))
         
         # Keep track of where each node came from
         came_from = {}
         
-        # g_score: cost from start to current node
+        # Cost from start to current node
         g_score = {start: 0}
         
-        # f_score: estimated cost from start to goal through current node
+        # Estimated cost from start to goal through current node
         f_score = {start: self.heuristic(start, goal)}
         
         while open_set:
