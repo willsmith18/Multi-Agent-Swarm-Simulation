@@ -12,9 +12,7 @@ import csv
 import random
 from datetime import datetime
 
-from environment import DisasterEnvironment
-from agents import Agent, StigmergyAgent, CommunicatingAgent
-from controller import ExperimentController
+from search_rescue import DisasterEnvironment, Agent, StigmergyAgent, CommunicatingAgent, ExperimentController
 
 def parse_arguments():
     """Parse command line arguments for simulation and experiments"""
@@ -222,7 +220,7 @@ def analyze_results(args):
     # Create visualization
     try:
         # Try to import visualization utilities
-        from visualization_all import create_comprehensive_report
+        from search_rescue.utils.visualization import create_comprehensive_report
         output_dir = create_comprehensive_report(args.files, args.output)
         print(f"Analysis complete. Results saved to: {output_dir}")
     except ImportError:

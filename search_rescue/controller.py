@@ -15,8 +15,8 @@ from datetime import datetime
 import argparse
 from tqdm import tqdm
 
-from environment import DisasterEnvironment
-from agents import Agent, StigmergyAgent, CommunicatingAgent
+from .environment import DisasterEnvironment
+from .agents import Agent, StigmergyAgent, CommunicatingAgent
 
 class ExperimentController:
     """
