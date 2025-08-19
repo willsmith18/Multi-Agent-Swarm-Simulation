@@ -2,7 +2,7 @@
 
 > **Advanced AI coordination strategies achieving 60% efficiency improvements in disaster response scenarios**
 
-![gui_demo](docs\images\gui_demo.png)
+![gui_demo](docs/images/gui_demo.png)
 
 ## 🎯 Project Impact
 
