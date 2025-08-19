@@ -2,7 +2,9 @@
 
 > **Advanced AI coordination strategies achieving 60% efficiency improvements in disaster response scenarios**
 
-![gui_demo](docs/images/gui_demo.png)
+[![Python](https://img.shields.io/badge/Python-3.7+-blue.svg)](https://python.org)
+[![Research](https://img.shields.io/badge/Research-Multi--Agent%20AI-green.svg)](https://github.com)
+[![Status](https://img.shields.io/badge/Status-Production%20Ready-success.svg)](https://github.com)
 
 ## 🎯 Project Impact
 
@@ -16,6 +18,8 @@ This project implements and compares three AI coordination strategies for multi-
 - 🤖 **A* pathfinding** and **stigmergy algorithms** implemented from scratch
 
 ## 📊 Experimental Results Summary
+
+![Strategy Performance Comparison](analysis/combined/strategy_across_phases.png)
 
 | Coordination Strategy | Avg Completion Time | Coverage Efficiency | Performance Gain |
 |----------------------|-------------------|-------------------|-------------------|
@@ -88,7 +92,7 @@ python main.py --mode phase2 --repetitions 3    # Environmental impact
 python main.py --mode phase3 --repetitions 1    # Communication constraints
 
 # Analyze results with automated visualization
-python main.py --mode analyze --files experiment_results/*.csv
+python main.py --mode analyze --files results/*.csv
 ```
 
 ### Custom Experiment
@@ -126,16 +130,27 @@ numpy • pandas • matplotlib • seaborn • tkinter • argparse • csv •
 
 ```
 multi-agent-search-rescue/
-├── agents.py              # Agent implementations (Basic, Stigmergy, Communication)
-├── environment.py         # Disaster environment with obstacles and victims
-├── controller.py          # Experiment controller and GUI management
-├── main.py               # CLI interface and experiment orchestration
-├── visualization_all.py  # Comprehensive analysis and plotting
-├── experiment_results/   # Experimental data and CSV outputs
+├── search_rescue/             # Main package
+│   ├── __init__.py
+│   ├── agents.py              # Agent implementations (Basic, Stigmergy, Communication)
+│   ├── environment.py         # Disaster environment with obstacles and victims
+│   ├── controller.py          # Experiment controller and GUI management
+│   └── utils/                 # Utility functions
+│       ├── __init__.py
+│       └── visualization.py   # Comprehensive analysis and plotting
+├── main.py                    # CLI interface and experiment orchestration
+├── requirements.txt           # Python dependencies
+├── setup.py                   # Package installation
+├── results/                   # Experimental data and analysis outputs
 │   ├── phase1_results_*.csv
 │   ├── phase2_results_*.csv
-│   └── phase3_results_*.csv
-└── README.md            # This file
+│   ├── phase3_results_*.csv
+│   └── analysis/              # Generated visualizations
+├── docs/                      # Documentation
+│   ├── technical_report.md    # Detailed technical implementation
+│   ├── methodology.md         # Experimental methodology
+│   └── images/                # Screenshots and diagrams
+└── README.md                  # This file
 ```
 
 ## 🏥 Real-World Applications
@@ -157,19 +172,18 @@ This multi-agent coordination research has direct applications in:
 - **Autonomous vehicle fleets** - Coordinated navigation and route optimization
 - **IoT sensor networks** - Distributed sensing and data collection
 
-## 🔬 Research Validation
+## 📚 Documentation
 
-### Statistical Rigor
-- **135+ trials** across all experimental conditions
-- **Repeated measures design** with error analysis
-- **Confidence intervals** and statistical significance testing
-- **Reproducible methodology** with fixed random seeds
+### Technical Resources
+- **[Technical Implementation Report](docs/technical_report.md)** - Comprehensive technical analysis (28 pages)
+- **[Experimental Methodology](docs/methodology.md)** - Research design and validation (25+ pages)
+- **[Analysis Results](analysis/)** - Publication-quality visualizations and statistical analysis
 
-### Performance Validation
-- **Scalability testing** from 3-10 agents
-- **Robustness analysis** across environmental conditions
-- **Computational efficiency** benchmarks
-- **Real-time performance** optimization
+### Quick Links
+- **Installation**: See requirements.txt and setup.py
+- **Usage Examples**: Run `python main.py --help` for all options
+- **Research Results**: [View comprehensive analysis](analysis/combined/overall_summary.txt)
+- **Code Documentation**: Well-documented source code with type hints
 
 ## 📋 Installation & Requirements
 
@@ -179,7 +193,10 @@ git clone https://github.com/williamsmith/multi-agent-search-rescue.git
 cd multi-agent-search-rescue
 
 # Install dependencies
-pip install numpy matplotlib pandas seaborn scipy tqdm
+pip install -r requirements.txt
+
+# Alternative: Install as package
+pip install -e .
 
 # Run quick demo
 python main.py --mode gui --strategy communication --agents 5
