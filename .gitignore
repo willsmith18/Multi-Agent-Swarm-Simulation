@@ -41,6 +41,9 @@ ENV/
 .DS_Store
 Thumbs.db
 
+# Allow specific images
+!docs/images/*.png
+
 # Experiment outputs (if you don't want to track them)
 # experiment_results/
 # experiment_analysis/
